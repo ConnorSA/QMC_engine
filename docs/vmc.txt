@@ -1,0 +1,147 @@
+/**
+@page vqmc Variational Quantum Monte Carlo 
+
+This page provides a brief overview of the theory behind the variational quantum Monte Carlo method. The mathematics used in the software are then described in more detail such that a user may better understand how the functions and variables utilized within are related. 
+
+
+@section introduction VQMC in a Nutshell
+
+The variational quantum Monte Carlo method (VQMC) is a computational method for approximating the ground state energy of a system. More often than not, the time-independent Schrödinger equation of a system defined by the Hamiltonian \f$\hat{H}\f$ may not be solved to determine the system's ground state energy \f$E_{gs}\f$. The \e variational \e principle from quantum mechanics provides that for any normalized function \f$\Psi\f$, we have
+\f{equation}{E_{gs} \leq \langle \Psi | \hat{H} | \Psi \rangle \equiv \langle \hat{H} \rangle, \f} i.e., the expected value of \f$\hat{H}\f$ with an arbitrary \f$\Psi\f$ will most likely overestimate \f$ E_{gs}\f$, giving an upper bound for the ground state energy \cite griffiths2018introduction. It follows that \f$E_{gs}\f$ may be estimated through testing trial functions across combinations of parameter values and selecting as the approximate ground state wave function the one parameterized with the values that minimize \f$\langle \hat{H} \rangle\f$. 
+
+The expected value of \f$\hat{H}\f$ is given by the following integral
+
+\f{align*}{\tag 1
+\langle \hat{H} \rangle & = \langle \Psi |\hat{H}| \Psi \rangle \\
+	& = \int \Psi^* \hat{H} \Psi d\textbf{r}_i, \f}
+ 
+where \f$\textbf{r}_i\f$ are the positions of the electrons that \f$\Psi\f$ depends on. Accordingly, the VQMC method derives its name from using \ref montecarlo techniques in evaluating this integral. 
+
+@section software Software Specific Details
+
+This software calculates the ground state energy of the \f$ H_2^+ \f$ ion and \f$ H_2 \f$ molecule using VQMC. The Hamiltonian is given by  
+
+\f{equation}{\tag {2}
+    \hat{H}(\{\textbf{r}_i\},\{\textbf{R}_I\})\Psi(\{\textbf{r}_i\}) \equiv\left(-\frac{1}{2}\sum_i\nabla_i^2+\sum_{i>j}\frac{1}{r_{ij}}-\sum_{I}\sum_{i}\frac{Z_I}{r_{iI}}+\sum_{I>J}\frac{Z_IZ_J}{r_{IJ}}\right)\Psi=E\Psi, \f}
+
+where the Born-Oppenheimer approximation is assumed and the units are given in Hartree atomic units. The problem specifies \f$N_n\f$ nuclei of atomic number \f$Z_I \f$ at coordinates \f$\textbf{R}_I \f$ and \f$N \f$ electrons at coordinates \f$\textbf{r}_i \f$ where \f$ r_{ij} = \left | \textbf{r}_i - \textbf{r}_j \right | \f$, \f$r_{iI}= \left | \textbf{r}_i - \textbf{R}_I \right | \f$ and \f$ r_{IJ} = \left | \textbf{r}_I - \textbf{r}_J \right | \f$.
+
+To apply a Monte Carlo integration method, specifically Markov chain Monte Carlo (MCMC) for this software, the integral given in equation (1) is rewritten as 
+
+\f{equation}{\tag {3} \langle \hat{H}_L \rangle_{|\Psi|^2} = \frac{\int |\Psi|^2(\hat{H}\Psi)/\Psi  d\{\textbf{r}_i\}}{\int |\Psi|^2  d{\textbf{r}_i}}, \f}
+
+where \f$ \hat{H}_L = \hat{H}\Psi / \Psi \f$ is the localized Hamiltonian. 
+
+
+@subsection basis Basis Set Construction 
+
+For computational feasibility, trial wave functions parametrized by a reasonably small number of coefficients should be constructed. The number of coefficients also defines the degrees of freedom of the system which is not to be confused with the dimension of the MCMC sample space of \f$3N\f$.
+
+The basis set \f$\{\phi_k\}_{k=1}^{M}\f$ may be chosen from numerous types of functions. This software utilizes atomic orbitals, e.g., Gaussians, Gaussians with additional properties or Hydrogen-like orbitals, that are centered on \f$ \textbf{0} \f$. A set \f$ \{\phi_k^I(\textbf{r})=\phi_k(\textbf{r}-\textbf{R}_I)\}_{k=1}^{M} \f$ centered on each atom is then created followed by taking a union over all atoms and renumbering them to get the total basis set: 
+
+\f{equation}{\{\varphi_k(\textbf{r})\}_{k=1}^{N_nM} = \bigcup_I\{\phi_k^I(\textbf{r})\}. \f}
+
+In the software, M is the parameter n_basis_functions_per_atom. For both slater-type basis functions and Gaussians there are 2 parameters per basis function, a linear multiplier and a length scale.
+
+The basis sets in the code have the form, for an atom at the origin, with \f$ r \f$ the radial distance, \f$ \alpha \f$ the length scale parameter and \f$ c \f$ the linear parameter:
+
+Slater-1s:
+
+\f{equation}{\phi(\textbf{r}) =c ( \alpha^3 /\pi)^{1/2}\exp(-\alpha r) \f}
+
+Sto-3g:
+
+\f{equation}{\phi(\textbf{r}) =c(2  \alpha /\pi)^{3/4}\exp(-\alpha  r^2)\f}
+
+Single electron wave functions are obtained through summing the basis set in its entirety 
+\f{equation}{ 
+    \psi_i(\textbf{r})=\sum_{k=1}^{N_IM}c_{ik}\varphi_k(\textbf{r}). \f}
+
+Using this as the trial wave function, i.e., \f$ \Psi=\psi_1 \f$, with MCMC algorithms and optimization schemes results in \f$2*N_n\times M \f$ degrees of freedom. As this is also a linear combination, the linearity of \f$\hat{H}\f$ and analytic derivatives of the basis set may be used to speed up the calculation of
+\f{equation}{
+    H\psi_1(\textbf{r})=\sum_kc_{ik}H\varphi_k(\textbf{r}),\f}
+where \f$H\varphi_k(\textbf{r})\f$ can be analytically precomputed for hydrogen-like orbitals or Gaussians.
+
+For systems with more than one electron (\f$N > 1\f$ ), the Slater determinant with Jastrow factor will be taken:
+\f{equation}{
+   \Psi(\{\textbf{r}_i\})=e^{J(\{\textbf{r}_i\})}D(\{\psi_i\},\{\textbf{r}_i\}),
+\f}
+
+\f{equation}{
+D(\{\psi_i\},\{\textbf{r}_i\})=\begin{vmatrix}
+\psi_1(\textbf{r}_1) &\psi_2(\textbf{r}_1) &\cdots& \psi_N(\textbf{r}_1) \\
+\psi_1(\textbf{r}_2) &\psi_2(\textbf{r}_2) &\cdots& \psi_N(\textbf{r}_2) \\
+\vdots  &\vdots  &\ddots&\vdots \\
+\psi_1(\textbf{r}_N) &\psi_2(\textbf{r}_N) &\cdots& \psi_N(\textbf{r}_N) \\
+\end{vmatrix}. \f}
+
+
+When utilized in full, the number of degrees of freedom (DOF) would be \f$2*M\times N_n\times N+N_J\f$ where \f$ N_J \f$ is the DOF in \f$J\f$. However, this can be significantly reduced by assuming that a single electron state \f$\{\psi_i\}\f$ is sufficient for the calculation, assuming the first 2 electron states differ only by spin: \f$\psi_1(\textbf{r},\uparrow)=\psi_1(\textbf{r})|{\uparrow}\rangle\f$, and \f$\psi_2=\psi_1|{\downarrow}\rangle \f$. Then this gives for 2 electrons:
+\f{equation}{
+    D(\{\psi_i\},\{\textbf{r}_i\})=\psi_1(\textbf{r}_1)\psi_2(\textbf{r}_2)-\psi_1(\textbf{r}_2)\psi_2(\textbf{r}_1)=\psi_1(\textbf{r}_1)\psi_1(\textbf{r}_2)(|{\uparrow}\rangle|{\downarrow}\rangle-|{\downarrow}\rangle|{\uparrow}\rangle)=\psi_1(\textbf{r}_1)\psi_1(\textbf{r}_2).\f}.
+    
+This is the expression used in the program and the number of degrees of freedom is only \f$2*M\times N_n+N_J\f$. While this significantly simplifies calculations, it means states where 2 electrons are in different states will not be found.
+
+@subsection jastrow Jastrow Factor
+
+The choice of Jastrow factor is never trivial. The CASINO code suggests using the DTN factor as one possibility \cite drummond. However, these are designed specifically for periodic systems which is not characteristic of the systems here. Adopting that of Boys and Handy [3,4] would be more suitable:
+
+\f{equation}{
+    J(\{\textbf{r}_i\})=\sum_I\sum_{i<j}U_{Iij}, \f}
+
+\f{equation}{
+    U_{Iij} = \sum_k \Delta(m_{kI},n_{kI})c_{kI}(\bar{r}_{iI}^{m_{kI}}\bar{r}_{jI}^{n_{kI}}+\bar{r}_{jI}^{m_{kI}}\bar{r}_{iI}^{n_{kI}})\bar{r}_{ij}^{o_{kI}}, \f}
+
+\f{equation}{
+    \bar{r}_{iI} =\frac{b_Ir_{iI}}{1+b_{I}r_{iI}}, \f}
+
+\f{equation}{
+    \bar{r}_{ij}=\frac{d_Ir_{ij}}{1+d_{I}r_{ij}}, \f}
+
+\f{equation}{
+  \Delta(m,n)=1-0.5\delta_{mn}, \f}
+
+where \f$(m,n,o)\f$ is a triple of integers, and including more increases the complexity of \f$J\f$. Furthermore, there are various cusp conditions that must be satisfied \cite schmidt, which fixes the choice of these integers. The inverse length scales are assumed to be the same for all atoms, \f$b_I=b\f$, \f$d_I=d\f$, and we fix them rather than use them as dofs. This is also done with the dofs \f$c_{kI}=c_k\f$, so that \f$N_J\f$ is the number of terms in the \f$k\f$ sum in \f$U_{Iij}\f$. 
+
+
+*/
+
+/** @page montecarlo Monte Carlo Integration
+
+Monte Carlo (MC) integration is a class of numerical integration techniques having a stochastic-probabilistic nature as opposed to deterministic techniques such as Gaussian quadrature and trapezoidal integration \cite ernst. In general, the MC integration involves taking a simple region that encloses the region of integration, followed by generating random points from the simple region and counting the number of 'hits' or points that are from the integration region \c. Then in the 2D case, the integral would be evaluated by multiplying the fraction of points that are hits to the total area of the simple region. Thus, as more random points are generated, the integral will converge to the actual value. 
+
+This software utilizes the Markov chain Monte Carlo technique (MCMC), specifically Metropolis-Hastings method (see \ref mcmc). Under the Metropolis algorithm, a Markov chain is generated from a proposed density function and moves are accepted/rejected based on a set rule or probability, leading to a probability distribution or final value \cite metropolis. If \f${\cal P}_i^{(n)}\f$ defines the probability of being in state \f$ i\f$ at step \f$ n\f$ then the algorithm is as follows:
+
+- The next state \f$ j \f$ is sampled with probability \f$F_{i\rightarrow j}\f$ 
+- State \f$ j \f$ is accepted with probability \f$A_{i \rightarrow j}\f$ whereby it is used as the next sample
+- State \f$ j \f$ is rejected with probability \f$1 - A_{i \rightarrow j}\f$ whereby state \f$ i \f$ is used as the next sample 
+
+With more samples, the properties of \f$ F \f$ and \f$ A \f$ become known, leading to \f${\cal P}_i^{(n\rightarrow \infty)} \rightarrow p_i \f$ and thus, the method converges to the true distribution or desired value regardless of the initial state. 
+
+
+
+*/
+
+
+/** @page latinhc Latin Hypercube 
+
+When conducting a search for the optimal parameters, it is easy for the search space dimensions to grow geometrically large. Latin hypercube sampling is a method that creates random sets of parameters that sufficiently cover the search space through 
+
+- Subdividing or stratifying each dimension of the search space into \f$ N \f$ equal regions 
+- Selecting \f$ N \f$ points from the search space such that when they're projected onto any dimension, a region in that dimension has only a single point
+
+As explained in \cite mcclarren, this idea can be applied to a hypercube by first defining a set \f$ \textbf {X} = (X_1, X_2, \ldots, X_p)\f$ of \f$ p \f$ independent random variables. Dividing the domain of each \f$ X_j\f$ into \f$ N \f$ intervals allows \f$N\f$ samples to be generated and creating \f$ N^p \f$ intervals. \f$ N + 1\f$ edges then define these intervals
+
+\f{equation}{ \{ F_j^{-1}(0),F_j^{-1}(\frac{2}{N}),\ldots,F_j^{-1}(\frac{N-1}{N}),F_j^{-1}(N) \}.
+\f}
+
+In order to generate a random set of parameters, a permutation matrix \f$ \boldsymbol {\Pi} \f$ with size \f$N \times p \f$ and elements \f$ \pi_{ij} \f$ is defined whereby there are \f$ p \f$  different columns of randomly selected permutations of the integers \f${1,2,\ldots,N}\f$. The \f$ i\f$th sample of dimension \f$j \f$ may then be produced through evaluating 
+\f{equation}{ x_{ij} = F_j^{-1}(\frac{1}{N}(\pi_{ij} - 1 + u_{ij})),
+\f}
+
+where \f$u_{ij} \sim U(0,1)\f$, making the \f$i\f$th sample of \f$\textbf {X} \f$, \f$\textbf {x}_i = (x_{i1},\ldots,x_{iN})\f$ \cite mcclarren.     
+
+
+
+*/
+

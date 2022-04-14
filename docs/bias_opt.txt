@@ -1,0 +1,74 @@
+/** 
+
+@page optimization Optimisation for a large parameter search-space 
+ 
+@section intro Gaussian Process 
+
+Given that MCMC evaluations for a given set of points in parameter space can quickly become expensive, we are motivated to use a surrogate model that can be used when searching for the best possible set of parameters to trial. Here we present an approach, as detailed by Wang et al \cite wang2019, used to perform a Bayesian global optimisation. 
+
+We start by defining our prior distribution on our ground state calculation (as found using MCMC) as a Gaussian process:
+
+\f{equation}{\tag {1}
+    f(\boldsymbol{X}) \sim \mathcal{G} \mathcal{P} (\boldsymbol{\mu}^{(0)}, \boldsymbol{\Sigma}^{(0)})
+     \f}
+
+Where \f$ \boldsymbol{X} \f$ is of set of points in parameter space, \f$ \boldsymbol{\mu} \f$ is our mean function which is represented as a constant, and \f$ \boldsymbol{\Sigma} \f$ defines our covariance matrix which is induced by a Gaussian kernel. The posterior mean and covariance matrix are updated for a set of new points  \f$ \boldsymbol{x}^{(1:n)} \f$ via: 
+  
+\f{equation}{\tag {2}
+     \boldsymbol{\mu}^{(n)} = \boldsymbol{\mu}^{(0)} + K(\boldsymbol{X}, \boldsymbol{x}^{(1:n)} ) K(\boldsymbol{x}^{(1:n)},\boldsymbol{x}^{(1:n)})^{-1} (y^{(1:n)} - \mu (\boldsymbol{x}^{(1:n)}))
+     \f}
+     
+\f{equation}{\tag {3}
+     \boldsymbol{\Sigma}^{(n)} = K(\boldsymbol{X},\boldsymbol{X}) - K(\boldsymbol{X}, \boldsymbol{x}^{(1:n)} ) K(\boldsymbol{x}^{(1:n)}, \boldsymbol{x}^{(1:n)}  )^{-1} K(\boldsymbol{x}^{(1:n)},\boldsymbol{X} )
+     \f}
+Where  \f$  y^{(1:n)} \f$ is the value of the function being optimised at a given set of parameters,  \f$ \mu (\boldsymbol{x}^{(1:n)}) \f$ is obtained from the prior mean function across the new set, and the function K is computing the covariance (also  Gaussian kernel) between each entry in \f$ \boldsymbol{X} \f$ and  \f$ \boldsymbol{x}^{(1:n)} \f$.
+
+
+@section grad_dec Optimisation of parameters
+ 
+Given we have constructed a surrogate model we may evaluate a large set of test points through the expected improvement q-EI:
+
+\f{equation}{\tag {4}
+     q\textrm{-EI} = \mathop{\mathbb{E}} [ \max_{i=0,... q} \boldsymbol{e}_i [\boldsymbol{m}(\boldsymbol{X}) + \boldsymbol{C}(\boldsymbol{X})\boldsymbol{Z}]]
+\f}
+
+Where \f$  \boldsymbol{e}_i \f$ is a unit vector which acts as a selector across the other vectors  \f$ \boldsymbol{m}(\boldsymbol{X})  \f$ and \f$  \boldsymbol{C}(\boldsymbol{X})\boldsymbol{Z} \f$. The vector  \f$ \boldsymbol{m}(\boldsymbol{X})  \f$ evaluates the difference between the previous best result and the posterior mean,  \f$ \boldsymbol{Z}  \f$ is a vector containing samples from a standard normal random vector, and  \f$  \boldsymbol{C}(\boldsymbol{X})  \f$ contains the negative of the Cholesky decomposition of posterior covariance matrix. For the zeroth thread (i=0) both \f$ \boldsymbol{m}(\boldsymbol{X})  \f$ and \f$  \boldsymbol{C}(\boldsymbol{X})  \f$ are returned as 0. The stochastic gradient estimator of the expected improvement can then be constructed as:
+
+\f{equation}{\tag {5}
+        \boldsymbol{g}(\boldsymbol{X}, \boldsymbol{Z}) = 
+\begin{cases}
+    \nabla h (\boldsymbol{X}, \boldsymbol{Z})         ,& \text{if }  \nabla h (\boldsymbol{X}, \boldsymbol{Z}) 
+ \text{ exists} \\
+    0,              & \text{otherwise}
+\end{cases}
+
+\f}
+
+where:
+
+\f{equation}{\tag {6}
+        h(\boldsymbol{X}, \boldsymbol{Z}) = \max_{i=0,... q} \boldsymbol{e}_i [\boldsymbol{m}(\boldsymbol{X}) + \boldsymbol{C}(\boldsymbol{X})\boldsymbol{Z}]
+
+\f}
+Following the algorithms outlined by S. P. Smith \cite smith1995 on the backward differentiation of Cholesky dependent functions one may find the derivatives to  \f$ \boldsymbol{C}(\boldsymbol{X}) \f$ in the above with respect to each parameter. Differentiation over each parameter also needs to be computed for \f$  \boldsymbol{m}(\boldsymbol{X}) \f$ seperately and added into get the stochastic gradient estimator. From this we may evaluate a gradient estimate at point \f$  \boldsymbol{X}_t \f$ as:
+
+\f{equation}{\tag {7}
+        \boldsymbol{G}(  \boldsymbol{X}_t) = \frac{1}{M} \sum_{m=1}^{M} \boldsymbol{g}(\boldsymbol{X}_t, \boldsymbol{Z}_{t,m})
+\f}
+
+Where \f$ M \f$ is a number of samples the stochastic gradient estimator is averaged over. From this we generate the next set of points in parameter space to test as:
+
+\f{equation}{\tag {8}
+        \boldsymbol{X}_{t+1} = \underset{H}{\Pi}[\boldsymbol{X}_{t} + \epsilon_t \boldsymbol{G}(  \boldsymbol{X}_t) ]
+\f}
+Where \f$ \underset{H}{\Pi} \f$ defines the projection (back) into the allowed parameter space and \f$ \epsilon_t \f$ defines a step size for the points in parameter to space to wander. The step size decrease as the simulation goes on.
+
+
+
+  
+
+  
+
+*/ 
+
+ 

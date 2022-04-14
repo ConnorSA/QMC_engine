@@ -1,0 +1,75 @@
+/**
+
+@file basis_functions.f90
+@brief Functions that define the Hamiltonian that specifies the problem and the basis set being used.
+
+@file read_data.f90
+@brief Subroutines to read files of user input into fortran.
+
+@file init_params.py
+@brief Python code to obtain user input through GUI or command line.
+
+@file plotting.py
+@brief Python plotting scripts which output the contour plots for the wave function or electron probability density.
+
+@file energy_plotting.py
+@brief Script to output the energy against the bond length.
+
+@file stoch_grad.f90
+@brief Modules for optimization.
+
+@file priors.f90
+@brief Functions for obtaining the prior mean and its derivative
+
+@file param_search.f90
+@brief Functions/subroutines associated with building/initialisation the parameter search space and finding the best parameters from a given MCMC run.
+
+@file main_driver.f90
+@brief Main driver script for simulation.
+
+@file MCMC.f90
+@brief Functions and subroutines for implementing Markov chain Monte Carlo
+
+@file latin_driver.f90
+@brief Simulation driver for latin hypercube sampling
+
+@file gradient_estimator.f90
+@brief Subroutines for obtaining a gradient estimation through Cholesky decomposition
+
+@file GP_surrogate_test_driver.f90
+@brief Driver for testing the Gaussian process surrogate
+
+@file GP_surrogate.f90
+@brief Gaussian process surrogate subroutines and functions
+
+@file constants.f90
+@brief Fortran shared constants definitions
+
+@file electron_density.f90
+@brief Electron density function
+
+@file ed_test.f90
+@brief Driver for testing electron density function
+
+@file component_functions.f90
+@brief Basic subfunctions used throughout the simulation
+
+@file calc.f90
+@brief Function completing calculations of either the wavefunction or electron density (depending on the system) at a set of coordinates [x,y,0] on a grid of equally spaced points on a xy grid.
+
+@file Biased_Optim.f90
+@brief Biased optimization subroutines and functions
+
+@file bond_driver.f90
+@brief Driver for running multiple simulations to optimise bond length
+
+@file Biased_Optim_example_driver.f90
+@brief Driver for testng the biased optimization routines
+
+@file netcdf_file.f90
+@brief Fortran subroutines for writing results to file.
+
+
+
+
+*/

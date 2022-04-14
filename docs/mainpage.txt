@@ -1,0 +1,55 @@
+/**
+@mainpage Introduction 
+
+This software will compute and visualise the ground state energy of: \f$H\f$, \f$H^{-1}\f$, \f$H_{2}^{+}\f$, \f$H_{2}\f$, \f$He^{+1}\f$ and \f$He\f$. This will be done through the use of the variational quantum Monte Carlo (VQMC) method. The main output result will be the minimum energy of the system and the resulting wavefunction.
+
+The expected groundstates are:
+
+\f$H\f$ = -13.60 eV ref: http://hyperphysics.phy-astr.gsu.edu/hbase/hyde.html
+
+\f$H^{-1}\f$ = −14.36 eV ref: https://journals.aps.org/pra/abstract/10.1103/PhysRevA.43.6104
+
+\f$H_{2}^{+}\f$ = -16.25 eV ref: https://doi.org/10.1016/S0009-2614(97)00571-X
+
+\f$H_{2}\f$ = -31.72 eV ref: http://hyperphysics.phy-astr.gsu.edu/hbase/molecule/hmol.html
+
+\f$He^{+1}\f$ = -54.42 eV ref: http://www.umich.edu/~chem461/QMChap8.pdf
+
+\f$He\f$ = -79.02 eV  ref: http://www.umich.edu/~chem461/QMChap8.pdf
+
+With the exception of user input and results visualization which are done via Python, the code is written entirely in Fortran. To boost efficiency, parallelization has been implemented through OpenMP with regards to Latin hypercube sampling and Markov chain Monte Carlo integration. 
+
+Along with the software documentation, this site provides a \ref tutorial_page for installing and running this software and interpreting the results produced. Additionally, the general theory applied in these simulations are explained on the following pages:
+
+- \ref vqmc
+- \ref montecarlo
+- \ref optimization
+
+@subsection github Github Repository
+
+The code may be accessed and downloaded from <a href="https://github.com/HetSys/PX915_2021_B">GitHub</a>. 
+
+@subsubsection f90mods Fortran Packages Required
+
+- LAPack
+
+
+@subsubsection pymods Python Packages Required
+
+- Numpy
+- Matlplotlib 
+- Tkinter (for the GUI input interface)
+- Netcdf
+
+
+
+@subsection author Authors
+
+- Connor Allen
+- Adam Fisher
+- Peter Lewin-Jones
+- Charlotte Rogerson
+- Alisdair Soppitt
+- Steven Tseng
+
+*/
